@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* StrikeLab — tema oscuro premium (único tema por ahora) */
+    --background: 224 40% 5%;
+    --foreground: 220 20% 96%;
+
+    --card: 224 35% 8%;
+    --card-foreground: 220 20% 96%;
+
+    --popover: 224 35% 8%;
+    --popover-foreground: 220 20% 96%;
+
+    /* Ámbar "strike" — energía de boliche */
+    --primary: 38 95% 55%;
+    --primary-foreground: 224 40% 6%;
+
+    --secondary: 224 25% 14%;
+    --secondary-foreground: 220 20% 96%;
+
+    --muted: 224 25% 14%;
+    --muted-foreground: 220 12% 62%;
+
+    --accent: 224 25% 16%;
+    --accent-foreground: 220 20% 96%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 220 20% 96%;
+
+    --border: 224 25% 16%;
+    --input: 224 25% 16%;
+    --ring: 38 95% 55%;
+
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    /* Respeta notch / safe areas en iOS */
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Scrollbar sutil para el look premium */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-lane-600;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .text-gradient-strike {
+    @apply bg-gradient-to-r from-strike to-strike-soft bg-clip-text text-transparent;
+  }
+
+  .glow-strike {
+    box-shadow: 0 0 24px -6px hsl(38 95% 55% / 0.45);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
