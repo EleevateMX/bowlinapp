@@ -28,7 +28,11 @@ export default function Register() {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-6 py-10">
       <div className="mb-8 text-center">
-        <span className="text-5xl">🎳</span>
+        <img
+          src="/favicon.svg"
+          alt="StrikeLab"
+          className="mx-auto size-20 rounded-2xl"
+        />
         <h1 className="mt-4 font-display text-3xl font-bold">
           Crea tu cuenta
         </h1>
