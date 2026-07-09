@@ -1,6 +1,6 @@
-# 🎳 StrikeLab
+# 🎳 StrikeLab MX
 
-**Tu laboratorio personal de boliche.** Registra tus partidas, analiza tu rendimiento y mejora tu juego con estadísticas avanzadas y un coach con IA.
+**Tu laboratorio personal de boliche 🇲🇽** Registra tus partidas, analiza tu rendimiento y mejora tu juego con estadísticas avanzadas y un coach con IA.
 
 PWA mobile-first construida con React, lista para empaquetarse como app nativa de iOS/Android con Capacitor.
 

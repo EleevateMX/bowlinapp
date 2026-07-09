@@ -41,9 +41,10 @@ export default function Login() {
         />
         <h1 className="mt-4 font-display text-3xl font-bold">
           Strike<span className="text-gradient-strike">Lab</span>
+          <span className="align-super text-sm font-bold text-strike"> MX</span>
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Tu laboratorio personal de boliche
+          Tu laboratorio personal de boliche 🇲🇽
         </p>
       </div>
 

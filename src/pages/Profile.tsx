@@ -122,7 +122,7 @@ export default function Profile() {
       </button>
 
       <p className="text-center text-xs text-muted-foreground">
-        StrikeLab v0.1.0
+        StrikeLab MX v0.1.0
       </p>
     </div>
   );
