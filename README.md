@@ -50,25 +50,18 @@ npm run gen:icons   # regenera public/icons/*.png tras cambiar el logo
 ## Empaquetar para iOS (Xcode) — se hace en una Mac
 
 Capacitor ya está instalado y configurado (`capacitor.config.ts`, `appId:
-mx.strikelab.app`). El proyecto `ios/` se genera en tu Mac (requiere macOS +
-Xcode + CocoaPods; no se versiona, está en `.gitignore`):
+mx.strikelab.app`). Los recursos de ícono y splash están listos en
+`resources/`. **Guía completa paso a paso: [`docs/PACKAGING-IOS.md`](docs/PACKAGING-IOS.md).**
+
+Resumen en tu Mac:
 
 ```bash
-# En tu Mac, una sola vez:
-npm install
-npm run build            # genera dist/ (lo que Capacitor empaqueta)
-npx cap add ios          # crea el proyecto ios/ (requiere CocoaPods)
-
-# Cada vez que cambie el código web:
-npm run build
-npx cap sync ios         # copia dist/ + plugins al proyecto iOS
-npx cap open ios         # abre el proyecto en Xcode
-
-# En Xcode: selecciona un simulador o dispositivo y pulsa ▶︎ Run.
+npm install && npm run build
+npx cap add ios                          # crea el proyecto ios/ (CocoaPods)
+npm install -D @capacitor/assets
+npx capacitor-assets generate --ios      # íconos + splash desde resources/
+npx cap open ios                         # abre Xcode → ▶︎ Run
 ```
-
-> Los assets de marca (SVG y PNG del logo) están en `brand/`. El `AppIcon`
-> de iOS se arma en Xcode con `brand/icon-1024.png`.
 
 ## Pagos con Stripe (planes Plus / Pro)
 
