@@ -8,11 +8,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Spinner } from "@/components/shared/Spinner";
 import { isValidFinalScore } from "@/lib/scoring";
+import { createGame } from "@/services/games";
 import { hasFeature, PLANS } from "@/lib/plans";
-import { useCurrentPlan } from "@/store/useAppStore";
+import { useAppStore, useCurrentPlan } from "@/store/useAppStore";
 import { cn } from "@/lib/utils";
-import type { ScoringMode } from "@/types";
+import type { GameType, ScoringMode } from "@/types";
 
 interface PlayerEntry {
   name: string;
@@ -41,16 +43,27 @@ const scoringModes: {
   },
 ];
 
+const gameTypes: { id: GameType; label: string }[] = [
+  { id: "casual", label: "Casual" },
+  { id: "practice", label: "Práctica" },
+  { id: "league", label: "Liga" },
+  { id: "tournament", label: "Torneo" },
+];
+
 export default function NewGame() {
   const navigate = useNavigate();
+  const user = useAppStore((s) => s.user);
   const plan = useCurrentPlan();
   const maxPlayers = PLANS[plan].maxPlayersPerGame;
 
   const [center, setCenter] = useState("");
   const [mode, setMode] = useState<ScoringMode>("final_only");
+  const [gameType, setGameType] = useState<GameType>("casual");
   const [players, setPlayers] = useState<PlayerEntry[]>([
     { name: "Yo", score: "" },
   ]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const canAddPlayer = players.length < maxPlayers;
 
@@ -72,17 +85,33 @@ export default function NewGame() {
     );
   };
 
-  const handleSave = () => {
-    // TODO: persistir en Supabase (Fase 6). Por ahora regresa al dashboard.
-    navigate("/");
+  const handleSave = async () => {
+    if (!user) return;
+    setError(null);
+    setSaving(true);
+    try {
+      await createGame(user.id, {
+        centerName: center.trim() || undefined,
+        gameType,
+        scoringMode: mode,
+        players: players.map((p, i) => ({
+          name: p.name.trim(),
+          score: Number(p.score),
+          isSelf: i === 0,
+        })),
+      });
+      navigate("/history");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No pudimos guardar la partida",
+      );
+      setSaving(false);
+    }
   };
 
   return (
     <div className="animate-fade-in-up space-y-6">
-      <PageHeader
-        title="Nueva partida"
-        subtitle="Registra tu juego de hoy"
-      />
+      <PageHeader title="Nueva partida" subtitle="Registra tu juego de hoy" />
 
       {/* Boliche */}
       <div className="space-y-2">
@@ -93,6 +122,28 @@ export default function NewGame() {
           value={center}
           onChange={(e) => setCenter(e.target.value)}
         />
+      </div>
+
+      {/* Tipo de juego */}
+      <div className="space-y-2">
+        <Label>Tipo de juego</Label>
+        <div className="flex flex-wrap gap-2">
+          {gameTypes.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setGameType(t.id)}
+              className={cn(
+                "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                gameType === t.id
+                  ? "border-strike bg-strike/10 text-strike"
+                  : "border-border text-muted-foreground",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Modo de captura */}
@@ -198,14 +249,26 @@ export default function NewGame() {
         )}
       </div>
 
+      {error && (
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+
       {/* Guardar */}
       <Button
         size="lg"
         className="w-full"
-        disabled={!allScoresValid}
+        disabled={!allScoresValid || saving}
         onClick={handleSave}
       >
-        <Plus /> Guardar partida
+        {saving ? (
+          <Spinner className="text-primary-foreground" />
+        ) : (
+          <>
+            <Plus /> Guardar partida
+          </>
+        )}
       </Button>
       <p className="text-center text-xs text-muted-foreground">
         Los scores deben estar entre 0 y 300.

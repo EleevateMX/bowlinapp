@@ -13,7 +13,8 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { mockStats } from "@/lib/mock-data";
+import { useAsync } from "@/hooks/useAsync";
+import { getStatsSummary } from "@/services/stats";
 import { PLANS } from "@/lib/plans";
 import { useAppStore, useCurrentPlan } from "@/store/useAppStore";
 
@@ -28,8 +29,14 @@ const menuItems = [
 
 export default function Profile() {
   const user = useAppStore((s) => s.user);
+  const selfPlayerId = useAppStore((s) => s.selfPlayerId);
   const signOut = useAppStore((s) => s.signOut);
   const plan = useCurrentPlan();
+
+  const { data: stats } = useAsync(
+    () => getStatsSummary(selfPlayerId),
+    [selfPlayerId],
+  );
 
   const initials = (user?.displayName ?? "SL")
     .split(" ")
@@ -68,9 +75,9 @@ export default function Profile() {
       {/* Resumen rápido */}
       <div className="grid grid-cols-3 gap-3 text-center">
         {[
-          { label: "Partidas", value: mockStats.totalGames },
-          { label: "Promedio", value: mockStats.averageScore },
-          { label: "Mejor", value: mockStats.bestScore },
+          { label: "Partidas", value: stats?.totalGames ?? 0 },
+          { label: "Promedio", value: stats?.averageScore ?? 0 },
+          { label: "Mejor", value: stats?.bestScore ?? 0 },
         ].map(({ label, value }) => (
           <Card key={label}>
             <CardContent className="p-3">
@@ -99,7 +106,7 @@ export default function Profile() {
       </Card>
 
       <button
-        onClick={signOut}
+        onClick={() => void signOut()}
         className="flex w-full items-center justify-center gap-2 py-2 text-sm font-medium text-destructive"
       >
         <LogOut className="size-4" /> Cerrar sesión
