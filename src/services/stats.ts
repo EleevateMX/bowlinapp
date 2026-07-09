@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { mockStats, mockScoreHistory } from "@/lib/mock-data";
+import { demoScoreHistory, demoStats } from "@/lib/demo-store";
 import { scoreTrend } from "@/lib/scoring";
 import type { StatsSummary } from "@/types";
 
@@ -12,7 +12,7 @@ export interface ScorePoint {
 export async function getStatsSummary(
   playerId: string | null,
 ): Promise<StatsSummary> {
-  if (!supabase || !playerId) return mockStats;
+  if (!supabase || !playerId) return demoStats();
 
   const { data, error } = await supabase.rpc("player_stats_summary", {
     p_player_id: playerId,
@@ -48,7 +48,7 @@ export async function getScoreHistory(
   playerId: string | null,
   limit = 10,
 ): Promise<ScorePoint[]> {
-  if (!supabase || !playerId) return mockScoreHistory;
+  if (!supabase || !playerId) return demoScoreHistory(limit);
 
   const { data, error } = await supabase.rpc("player_score_history", {
     p_player_id: playerId,

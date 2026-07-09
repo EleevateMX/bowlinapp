@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { mockGames } from "@/lib/mock-data";
+import { demoCreateGame, demoListGames } from "@/lib/demo-store";
 import { scoreGame, totalScore } from "@/lib/scoring";
 import type { GameType, ScoringMode } from "@/types";
 import { getMyPlayer, getOrCreatePlayer } from "./players";
@@ -59,7 +59,21 @@ export async function createGame(
   userId: string,
   input: NewGameInput,
 ): Promise<string> {
-  if (!supabase) throw new Error("Supabase no está configurado");
+  // Modo demo: persiste en localStorage
+  if (!supabase) {
+    return demoCreateGame({
+      centerName: input.centerName ?? null,
+      gameType: input.gameType,
+      scoringMode: input.scoringMode,
+      players: input.players.map((p) => ({
+        name: p.name,
+        isSelf: !!p.isSelf,
+        finalScore:
+          p.throws && p.throws.length > 0 ? totalScore(p.throws) : p.score,
+        throws: p.throws,
+      })),
+    });
+  }
 
   const centerId = input.centerName
     ? await getOrCreateCenter(userId, input.centerName)
@@ -175,16 +189,15 @@ export async function listGames(
   limit?: number,
 ): Promise<GameListItem[]> {
   if (!supabase) {
-    // Modo demo sin credenciales
-    const games = limit ? mockGames.slice(0, limit) : mockGames;
-    return games.map((g) => ({
+    // Modo demo: lee del store local
+    return demoListGames(limit).map((g) => ({
       id: g.id,
-      centerName: g.centerName ?? null,
+      centerName: g.centerName,
       playedAt: g.playedAt,
       gameType: g.gameType,
       scoringMode: g.scoringMode,
-      myScore: g.myScore,
-      players: g.players,
+      myScore: g.players.find((p) => p.isSelf)?.finalScore ?? 0,
+      players: g.players.length,
     }));
   }
 

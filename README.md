@@ -47,6 +47,35 @@ Los íconos se generan desde los SVG de `public/` (`favicon.svg` e
 npm run gen:icons   # regenera public/icons/*.png tras cambiar el logo
 ```
 
+## Empaquetar para iOS (Xcode) — se hace en una Mac
+
+Capacitor ya está instalado y configurado (`capacitor.config.ts`, `appId:
+mx.strikelab.app`). El proyecto `ios/` se genera en tu Mac (requiere macOS +
+Xcode + CocoaPods; no se versiona, está en `.gitignore`):
+
+```bash
+# En tu Mac, una sola vez:
+npm install
+npm run build            # genera dist/ (lo que Capacitor empaqueta)
+npx cap add ios          # crea el proyecto ios/ (requiere CocoaPods)
+
+# Cada vez que cambie el código web:
+npm run build
+npx cap sync ios         # copia dist/ + plugins al proyecto iOS
+npx cap open ios         # abre el proyecto en Xcode
+
+# En Xcode: selecciona un simulador o dispositivo y pulsa ▶︎ Run.
+```
+
+> Los assets de marca (SVG y PNG del logo) están en `brand/`. El `AppIcon`
+> de iOS se arma en Xcode con `brand/icon-1024.png`.
+
+## Modo demo (bundle autónomo)
+
+Sin `.env`, la app funciona **completa sin backend**: las partidas se guardan
+en el dispositivo (localStorage) y las estadísticas se calculan localmente.
+Ideal para probar el bundle antes de conectar Supabase.
+
 ## Estructura
 
 ```
