@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Fondo a sangre completa (sin esquinas): el SO aplica su propia máscara -->
+  <rect width="512" height="512" fill="#0a0e1a"/>
+  <!-- Contenido dentro de la zona segura (~78% centrado) -->
+  <g transform="translate(56,56) scale(0.78)">
+    <rect x="196" y="70" width="120" height="26" rx="13" fill="#f5a623"/>
+    <rect x="196" y="416" width="120" height="26" rx="13" fill="#f5a623"/>
+    <path d="M228 150 C210 200 210 230 232 250 C214 300 214 360 256 400"
+          stroke="#f5a623" stroke-width="24" stroke-linecap="round" fill="none"/>
+    <path d="M284 150 C302 200 302 230 280 250 C298 300 298 360 256 400"
+          stroke="#f5a623" stroke-width="24" stroke-linecap="round" fill="none"/>
+    <path d="M232 150 C232 118 280 118 280 150"
+          stroke="#f5a623" stroke-width="24" stroke-linecap="round" fill="none"/>
+    <path d="M150 360 L232 300 L286 336 L360 250"
+          stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M320 250 L366 244 L360 292"
+          stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+</svg>

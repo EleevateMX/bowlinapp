@@ -23,15 +23,28 @@ PWA mobile-first construida con React, lista para empaquetarse como app nativa d
 # 1. Instalar dependencias
 npm install
 
-# 2. Configurar entorno (opcional en esta fase — la app corre con mock data)
-cp .env.example .env
-# Llena VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
-
-# 3. Correr en desarrollo
+# 2. Correr en desarrollo (arranca en MODO DEMO con datos de ejemplo)
 npm run dev
 
-# 4. Build de producción
+# 3. Build de producción
 npm run build
+```
+
+### Modo demo vs. modo real
+
+- **Demo (por defecto):** sin archivo `.env`, la app usa datos de ejemplo y
+  no requiere Supabase. Ideal para probar y empaquetar el bundle.
+- **Real:** copia `.env.example` a `.env` y llena `VITE_SUPABASE_URL` y
+  `VITE_SUPABASE_ANON_KEY`. La app detecta las credenciales y activa auth +
+  base de datos automáticamente.
+
+### Íconos / PWA
+
+Los íconos se generan desde los SVG de `public/` (`favicon.svg` e
+`icon-maskable.svg`):
+
+```bash
+npm run gen:icons   # regenera public/icons/*.png tras cambiar el logo
 ```
 
 ## Estructura
