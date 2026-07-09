@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { RouterProvider } from "react-router-dom";
 
 import { router } from "@/routes";
+import { initNative } from "@/lib/native";
 import { useAppStore } from "@/store/useAppStore";
 import { useTheme } from "@/store/useTheme";
 
@@ -12,6 +13,7 @@ export default function App() {
 
   useEffect(() => {
     initTheme();
+    void initNative(useTheme.getState().theme);
     const unsubscribe = initialize();
 
     // Al volver de Stripe, el webhook pudo actualizar el plan: refréscalo

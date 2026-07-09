@@ -2,6 +2,12 @@ import { create } from "zustand";
 
 export type Theme = "dark" | "light";
 
+// Import diferido para evitar dependencia circular con native.ts
+async function syncNativeStatusBar(theme: Theme) {
+  const { applyStatusBarTheme } = await import("@/lib/native");
+  void applyStatusBarTheme(theme);
+}
+
 const STORAGE_KEY = "strikelab-theme";
 
 function applyTheme(theme: Theme) {
@@ -11,6 +17,8 @@ function applyTheme(theme: Theme) {
   // Sincroniza el color de la barra del navegador / status bar
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", theme === "dark" ? "#0a0e1a" : "#f7f8fb");
+  // En nativo, sincroniza la barra de estado
+  void syncNativeStatusBar(theme);
 }
 
 function readStoredTheme(): Theme {
