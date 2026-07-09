@@ -1,22 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
-  <rect width="512" height="512" rx="115" fill="#0a0e1a"/>
-  <!-- barras superior e inferior (deck spots) -->
-  <rect x="196" y="70" width="120" height="26" rx="13" fill="#f5a623"/>
-  <rect x="196" y="416" width="120" height="26" rx="13" fill="#f5a623"/>
-  <!-- pino de boliche estilizado (dos trazos simétricos) -->
-  <path d="M228 150
-           C210 200 210 230 232 250
-           C214 300 214 360 256 400"
-        stroke="#f5a623" stroke-width="24" stroke-linecap="round" fill="none"/>
-  <path d="M284 150
-           C302 200 302 230 280 250
-           C298 300 298 360 256 400"
-        stroke="#f5a623" stroke-width="24" stroke-linecap="round" fill="none"/>
-  <path d="M232 150 C232 118 280 118 280 150"
-        stroke="#f5a623" stroke-width="24" stroke-linecap="round" fill="none"/>
-  <!-- flecha de tendencia ascendente -->
-  <path d="M150 360 L232 300 L286 336 L360 250"
-        stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  <path d="M320 250 L366 244 L360 292"
-        stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 320 320">
+  <rect width="320" height="320" rx="72" fill="#0a0e1a"></rect>
+  <path d="M130 32 L190 32" stroke="#f5a623" stroke-width="13" stroke-linecap="round"></path>
+  <path d="M120 294 L200 294" stroke="#f5a623" stroke-width="13" stroke-linecap="round"></path>
+  <path d="M160 54 C186 54 196 76 190 102 C186 120 178 134 178 152 C178 178 202 196 202 226 C202 258 182 272 160 272 C138 272 118 258 118 226 C118 196 142 178 142 152 C142 134 134 120 130 102 C124 76 134 54 160 54 Z" fill="none" stroke="#f5a623" stroke-width="13" stroke-linejoin="round"></path>
+  <path d="M137 118 L183 118" stroke="#f5a623" stroke-width="13" stroke-linecap="round"></path>
+  <path d="M96 230 L146 186 L172 206 L232 132" fill="none" stroke="#0a0e1a" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"></path>
+  <path d="M96 230 L146 186 L172 206 L232 132" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"></path>
+  <path d="M232 132 L232 160 M232 132 L205 132" stroke="#ffffff" stroke-width="13" stroke-linecap="round"></path>
 </svg>
