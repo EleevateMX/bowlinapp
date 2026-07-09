@@ -21,5 +21,6 @@ npm-debug.log*
 .DS_Store
 
 # Capacitor
-ios/
+# El proyecto ios/ SÍ se versiona (su .gitignore interno excluye Pods/build/web).
+# Se regenera con `npx cap sync ios` en la Mac.
 android/

@@ -1,95 +1,115 @@
-# 📦 Empaquetar StrikeLab MX para iOS (Xcode)
+# 📦 StrikeLab MX en Xcode → subir build (TestFlight / App Store)
 
-Guía paso a paso para convertir la PWA en una app de iOS con Capacitor y
-abrirla en Xcode. **Todo esto se hace en una Mac** (Xcode solo existe en macOS).
+**El proyecto iOS ya está armado y versionado en `ios/`** — con el ícono y el
+splash de StrikeLab, bundle id `mx.strikelab.app`, orientación vertical y la
+declaración de cifrado lista. Solo falta lo que **obliga a macOS**: `pod
+install`, firmar y subir desde Xcode.
 
 ---
 
-## 0. Prerrequisitos (una sola vez)
+## 0. Prerrequisitos (una vez)
 
-- **macOS** con **Xcode** instalado (App Store) y abierto al menos una vez para
-  aceptar la licencia.
-- **CocoaPods**: `sudo gem install cocoapods` (o `brew install cocoapods`).
-- **Node 18+** y el repo clonado.
-- Una **cuenta de Apple Developer** (gratis para probar en tu iPhone; de pago
-  $99/año para publicar en la App Store).
+- **macOS** + **Xcode** (App Store), abierto una vez para aceptar la licencia.
+- **CocoaPods**: `sudo gem install cocoapods`.
+- **Node 18+**.
+- **Cuenta de Apple Developer de PAGO** ($99 USD/año) — obligatoria para subir a
+  TestFlight/App Store. (La cuenta gratis solo instala en tu propio iPhone, no
+  permite subir builds.)
 
 ```bash
-# Verifica que todo esté listo
-xcodebuild -version
-pod --version
-node --version
+xcodebuild -version && pod --version && node --version
 ```
 
 ---
 
-## 1. Instalar dependencias y compilar el web
+## 1. Preparar y abrir (en tu Mac)
 
 ```bash
 cd bowlinapp
 npm install
-npm run build        # genera dist/, que es lo que Capacitor empaqueta
+npm run build          # genera dist/ (lo que se empaqueta)
+npx cap sync ios       # copia dist/ al proyecto + corre pod install
+npx cap open ios       # abre Xcode (App.xcworkspace)
 ```
 
-> La app corre en **modo demo** sin `.env` (partidas locales), así que puedes
-> empaquetar y probar en el iPhone sin backend. Para datos reales, llena `.env`
-> antes del `npm run build`.
+> No necesitas `npx cap add ios`: el proyecto ya existe. `cap sync` regenera los
+> assets web y la config, y hace `pod install`.
+
+La app corre en **modo demo** sin `.env` (partidas locales) — perfecto para
+probar en TestFlight sin backend. Para datos reales, llena `.env` antes del
+`npm run build`.
 
 ---
 
-## 2. Crear el proyecto iOS (una sola vez)
+## 2. Firmar
 
-```bash
-npx cap add ios      # crea la carpeta ios/ y corre pod install
-```
+En Xcode → selecciona el proyecto **App** → pestaña **Signing & Capabilities**:
 
-Esto genera el proyecto Xcode en `ios/App/App.xcworkspace`.
-
----
-
-## 3. Generar íconos y splash desde el logo
-
-Los recursos fuente ya están en `resources/` (`icon.png` 1024×1024,
-`splash.png` y `splash-dark.png` 2732×2732). Genera todos los tamaños de iOS:
-
-```bash
-npm install -D @capacitor/assets
-npx capacitor-assets generate --ios
-```
-
-Esto llena el `AppIcon.appiconset` y el `LaunchScreen` con tu logo.
+1. Marca **Automatically manage signing**.
+2. En **Team**, elige tu cuenta de Apple Developer.
+3. Xcode genera el perfil de firma solo. El **Bundle Identifier** debe quedar
+   `mx.strikelab.app`.
 
 ---
 
-## 4. Sincronizar y abrir en Xcode
+## 3. Probar (simulador o iPhone)
 
-```bash
-npm run build        # cada vez que cambies el código web
-npx cap sync ios     # copia dist/ + plugins al proyecto iOS
-npx cap open ios     # abre Xcode
-```
+Elige un simulador (iPhone 15) o tu iPhone conectado → pulsa **▶︎ Run**.
+
+---
+
+## 4. Crear la app en App Store Connect (una vez)
+
+En [appstoreconnect.apple.com](https://appstoreconnect.apple.com) →
+**Mis Apps → +** → Nueva App:
+
+- **Plataforma**: iOS
+- **Nombre**: StrikeLab (o "StrikeLab MX" si "StrikeLab" está tomado)
+- **Idioma principal**: Español (México)
+- **Bundle ID**: `mx.strikelab.app` (debe existir en Certificates, Identifiers &
+  Profiles; Xcode lo registra al firmar, o créalo ahí)
+- **SKU**: `strikelab-mx` (interno, el que quieras)
+
+---
+
+## 5. Subir el build (archive → upload)
 
 En Xcode:
 
-1. Selecciona el proyecto **App** en el panel izquierdo.
-2. En **Signing & Capabilities**, elige tu **Team** (tu cuenta de Apple).
-   Xcode firma la app automáticamente.
-3. Arriba, elige un **simulador** (p. ej. iPhone 15) o tu **iPhone conectado**.
-4. Pulsa **▶︎ Run**.
+1. Arriba, cambia el destino a **Any iOS Device (arm64)**.
+2. Menú **Product → Archive** (compila la versión de distribución).
+3. Al terminar se abre el **Organizer** → botón **Distribute App** →
+   **App Store Connect → Upload** → siguiente hasta el final.
+4. En unos minutos el build aparece en App Store Connect → pestaña **TestFlight**.
 
-La app se instala y arranca. 🎳
+**Eso es el "sandbox":** desde TestFlight puedes instalarlo en tu iPhone
+(prueba interna) sin publicarlo al público todavía.
 
 ---
 
-## 5. Bucle de desarrollo
+## ⚠️ Importante antes de VENDER suscripciones en iOS
 
-Cada vez que cambies algo del código web:
+Apple **exige In-App Purchase** para contenido digital (los planes Plus/Pro).
+**No se permite cobrar suscripciones digitales con Stripe dentro de la app de
+iOS** — la rechazan en revisión.
+
+Para el build de TestFlight/sandbox no hay problema (pruebas internas). Pero
+antes de publicar al público, hay que **implementar Apple IAP** para los planes
+en iOS (Stripe se queda para la web). Cuando llegues ahí, avísame y lo montamos
+con el plugin de compras de Capacitor.
+
+---
+
+## 6. Bucle de desarrollo
+
+Cada cambio del código web:
 
 ```bash
 npm run build && npx cap sync ios
 ```
 
-Luego vuelve a Xcode y pulsa ▶︎. (No necesitas repetir `cap add`.)
+Luego en Xcode: ▶︎ Run, o Archive para subir un nuevo build. Sube el número de
+build en **App → General → Identity → Build** antes de cada Archive nuevo.
 
 ---
 
@@ -97,23 +117,9 @@ Luego vuelve a Xcode y pulsa ▶︎. (No necesitas repetir `cap add`.)
 
 | Campo | Valor |
 |---|---|
-| App ID (bundle) | `mx.strikelab.app` |
-| Nombre | StrikeLab |
-| Orientación | Vertical |
-| Color de fondo / splash | `#0a0e1a` |
-| Config | `capacitor.config.ts` |
-
----
-
-## Notas
-
-- **`ios/` no se versiona** (está en `.gitignore`): se regenera con
-  `npx cap add ios`. Si prefieres commitearlo (recomendado para equipos),
-  quita `ios/` del `.gitignore`.
-- **Barra de estado y splash** ya están integrados en el código
-  (`src/lib/native.ts`) y se adaptan al tema claro/oscuro.
-- **Safe areas** (notch / home indicator) se respetan vía
-  `viewport-fit=cover` y `env(safe-area-inset-*)` en el CSS.
-- Para **publicar en la App Store**: en Xcode, Product → Archive, y sigue el
-  asistente de distribución (requiere cuenta de pago y una ficha en App Store
-  Connect).
+| Bundle ID | `mx.strikelab.app` |
+| Display name | StrikeLab |
+| Versión / Build | `1.0` / `1` (súbelos para cada upload) |
+| Orientación | Vertical (iPhone) |
+| Fondo / splash | `#0a0e1a` |
+| Cifrado | Exento declarado (`ITSAppUsesNonExemptEncryption=false`) |
