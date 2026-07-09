@@ -176,6 +176,24 @@ export default function Dashboard() {
             </Card>
           )}
 
+          {/* Acceso al Coach IA */}
+          <Link to="/coach" className="block">
+            <Card className="border-strike/20 transition-colors hover:border-strike/40">
+              <CardContent className="flex items-center gap-3 p-4">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-strike/15">
+                  <Sparkles className="size-5 text-strike" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">Coach IA</p>
+                  <p className="text-xs text-muted-foreground">
+                    Tu plan de mejora personalizado
+                  </p>
+                </div>
+                <ChevronRight className="size-5 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </Link>
+
           {/* Últimas partidas */}
           <section>
             <div className="mb-3 flex items-center justify-between">

@@ -6,6 +6,7 @@ import { AppLayout } from "@/layouts/AppLayout";
 import { useAppStore } from "@/store/useAppStore";
 
 // Carga diferida: cada página es su propio chunk
+const Coach = lazy(() => import("@/pages/Coach"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const GameDetail = lazy(() => import("@/pages/GameDetail"));
 const History = lazy(() => import("@/pages/History"));
@@ -79,6 +80,7 @@ export const router = createBrowserRouter([
           { path: "/history", element: <Lazy><History /></Lazy> },
           { path: "/game/:id", element: <Lazy><GameDetail /></Lazy> },
           { path: "/stats", element: <Lazy><Stats /></Lazy> },
+          { path: "/coach", element: <Lazy><Coach /></Lazy> },
           { path: "/upgrade", element: <Lazy><Upgrade /></Lazy> },
           { path: "/profile", element: <Lazy><Profile /></Lazy> },
         ],
