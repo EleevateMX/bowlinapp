@@ -142,9 +142,18 @@ El acceso por plan se controla en `src/lib/plans.ts` y se aplica en la UI con el
 
 ## Roadmap
 
-- [x] **Fase 5a — Setup**: proyecto base, tema oscuro premium, navegación, mock data
-- [ ] **Fase 3 — Supabase**: esquema SQL, RLS, triggers y funciones de estadísticas
-- [ ] **Fase 6 — MVP**: auth real, persistencia de partidas, historial y dashboard con datos reales
-- [ ] **Monetización**: Stripe / Mercado Pago + webhooks de suscripción
-- [ ] **Fase Pro**: registro pin por pin, análisis de tiro, coach IA
-- [ ] **Capacitor**: empaquetado iOS / Android
+- [x] **Setup**: proyecto base, tema oscuro/claro premium, navegación, logo
+- [x] **Supabase**: esquema SQL, RLS, triggers y funciones de estadísticas
+- [x] **MVP**: auth real, persistencia de partidas, historial y dashboard
+- [x] **Frame por frame**: scoreboard con cálculo automático + detalle de partida
+- [x] **Estadísticas avanzadas**: consistencia, conversión de spares
+- [x] **Coach IA**: plan de mejora (motor local + Edge Function con Claude)
+- [x] **Pin por pin**: captura con tablero de pinos, pines fallados y splits
+- [x] **Optimización**: code-splitting del bundle
+- [x] **Monetización**: Stripe (Edge Functions + checkout) — *falta desplegar*
+- [x] **Capacitor**: config iOS + integración nativa — *falta build en Xcode (Mac)*
+
+### Pendiente de activar (requiere credenciales tuyas)
+
+- Conectar Supabase real (`.env`) · desplegar funciones de Stripe/Coach ·
+  `npx cap add ios` en Mac · registrar `strikelab.mx`
