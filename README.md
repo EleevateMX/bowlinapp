@@ -70,6 +70,34 @@ npx cap open ios         # abre el proyecto en Xcode
 > Los assets de marca (SVG y PNG del logo) están en `brand/`. El `AppIcon`
 > de iOS se arma en Xcode con `brand/icon-1024.png`.
 
+## Pagos con Stripe (planes Plus / Pro)
+
+Las Edge Functions viven en `supabase/functions/`. Para activarlas:
+
+```bash
+# 1. Crea los productos/precios en el dashboard de Stripe (mensual, MXN)
+#    Plus $150 y Pro $299 → copia sus price IDs (price_...)
+
+# 2. Configura los secretos en Supabase
+supabase secrets set \
+  STRIPE_SECRET_KEY=sk_live_xxx \
+  STRIPE_WEBHOOK_SECRET=whsec_xxx \
+  STRIPE_PRICE_PLUS=price_xxx \
+  STRIPE_PRICE_PRO=price_xxx
+
+# 3. Despliega las funciones
+supabase functions deploy create-checkout
+supabase functions deploy stripe-webhook --no-verify-jwt   # Stripe no manda JWT
+
+# 4. En Stripe → Webhooks, apunta a:
+#    https://<project>.supabase.co/functions/v1/stripe-webhook
+#    Eventos: checkout.session.completed, customer.subscription.updated/deleted
+```
+
+Flujo: el cliente llama `create-checkout` → redirige a Stripe → al pagar,
+el webhook inserta en `subscriptions` → el trigger `apply_subscription_plan`
+actualiza `profiles.plan`. La app lee ese campo para desbloquear funciones.
+
 ## Modo demo (bundle autónomo)
 
 Sin `.env`, la app funciona **completa sin backend**: las partidas se guardan

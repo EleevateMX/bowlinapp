@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Check, Crown, Sparkles, Zap } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Spinner } from "@/components/shared/Spinner";
 import { PLANS, type PlanDefinition } from "@/lib/plans";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { startCheckout } from "@/services/billing";
 import { useAppStore, useCurrentPlan } from "@/store/useAppStore";
 import { cn, formatMXN } from "@/lib/utils";
 import type { PlanId } from "@/types";
@@ -51,6 +55,28 @@ function PlanCard({ plan }: { plan: PlanDefinition }) {
   const currentPlan = useCurrentPlan();
   const setPlan = useAppStore((s) => s.setPlan);
   const isCurrent = currentPlan === plan.id;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSelect = async () => {
+    setError(null);
+    // Plan gratis, o modo demo: cambio local (sin pago real)
+    if (plan.priceMXN === 0 || !isSupabaseConfigured) {
+      setPlan(plan.id);
+      return;
+    }
+    // Modo real: checkout de Stripe
+    try {
+      setBusy(true);
+      await startCheckout(plan.id as "plus" | "pro");
+      // startCheckout redirige; si vuelve, hubo error
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No pudimos iniciar el pago",
+      );
+      setBusy(false);
+    }
+  };
 
   return (
     <Card
@@ -94,15 +120,27 @@ function PlanCard({ plan }: { plan: PlanDefinition }) {
         <Button
           className="mt-5 w-full"
           variant={plan.highlight ? "default" : "secondary"}
-          disabled={isCurrent}
-          onClick={() => setPlan(plan.id)}
+          disabled={isCurrent || busy}
+          onClick={handleSelect}
         >
-          {isCurrent ? "Tu plan actual" : `Elegir ${plan.name}`}
+          {busy ? (
+            <Spinner className="text-primary-foreground" />
+          ) : isCurrent ? (
+            "Tu plan actual"
+          ) : (
+            `Elegir ${plan.name}`
+          )}
         </Button>
-        {!isCurrent && plan.priceMXN > 0 && (
+        {error && (
+          <p className="mt-2 text-center text-[11px] text-destructive">
+            {error}
+          </p>
+        )}
+        {!isCurrent && plan.priceMXN > 0 && !error && (
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
-            Demo: el pago con Stripe/Mercado Pago llega en la fase de
-            monetización.
+            {isSupabaseConfigured
+              ? "Pago seguro con Stripe · cancela cuando quieras"
+              : "Modo demo: activa el plan para explorar sus funciones"}
           </p>
         )}
       </CardContent>
