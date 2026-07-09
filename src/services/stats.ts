@@ -1,8 +1,10 @@
 import { supabase } from "@/lib/supabase";
 import {
+  demoPinAnalysis,
   demoScoreHistory,
   demoSpareConversion,
   demoStats,
+  type PinAnalysis,
 } from "@/lib/demo-store";
 import { consistencyIndex, scoreTrend, standardDeviation } from "@/lib/scoring";
 import type { StatsSummary } from "@/types";
@@ -83,6 +85,22 @@ export async function getAdvancedStats(
     high: scores.length > 0 ? Math.max(...scores) : 0,
     spareConversion,
   };
+}
+
+/** Análisis pin por pin: pines más fallados y splits (Pro) */
+export async function getPinAnalysis(
+  playerId: string | null,
+): Promise<PinAnalysis> {
+  if (!supabase || !playerId) return demoPinAnalysis();
+
+  const { data } = await supabase.rpc("player_missed_pins", {
+    p_player_id: playerId,
+  });
+  const missed = (data ?? []).slice(0, 3).map((r) => ({
+    pin: Number(r.pin_number),
+    count: Number(r.missed_count),
+  }));
+  return { missed, splits: 0, hasData: missed.length > 0 };
 }
 
 export async function getScoreHistory(

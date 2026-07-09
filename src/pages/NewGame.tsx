@@ -9,10 +9,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Spinner } from "@/components/shared/Spinner";
+import { PinDeck } from "@/components/games/PinDeck";
 import { PinPad } from "@/components/games/PinPad";
 import { Scoreboard } from "@/components/games/Scoreboard";
 import { isValidFinalScore, totalScore } from "@/lib/scoring";
 import { addThrow, nextThrow, removeLastThrow } from "@/lib/frame-input";
+import {
+  pinAddThrow,
+  pinState,
+  pinsToCounts,
+  pinUndoThrow,
+} from "@/lib/pin-input";
 import { createGame } from "@/services/games";
 import { hasFeature, PLANS } from "@/lib/plans";
 import { useAppStore, useCurrentPlan } from "@/store/useAppStore";
@@ -68,8 +75,12 @@ export default function NewGame() {
   // Captura frame por frame: tiros por jugador y jugador activo
   const [throwsByPlayer, setThrowsByPlayer] = useState<number[][]>([]);
   const [activePlayer, setActivePlayer] = useState(0);
+  // Captura pin por pin: frames (→ tiros → pinos) por jugador + selección actual
+  const [pinFramesByPlayer, setPinFramesByPlayer] = useState<number[][][][]>([]);
+  const [pinSelected, setPinSelected] = useState<number[]>([]);
 
   const isFrameMode = mode !== "final_only";
+  const isPinMode = mode === "pin_by_pin";
   const canAddPlayer = players.length < maxPlayers;
 
   const modeAvailable = (m: ScoringMode) =>
@@ -89,11 +100,17 @@ export default function NewGame() {
   };
 
   const startCapture = () => {
-    setThrowsByPlayer(players.map(() => []));
+    if (isPinMode) {
+      setPinFramesByPlayer(players.map(() => []));
+    } else {
+      setThrowsByPlayer(players.map(() => []));
+    }
+    setPinSelected([]);
     setActivePlayer(0);
     setStep("capture");
   };
 
+  // --- Captura frame por frame (numérica) ---
   const handlePick = (pins: number) => {
     setThrowsByPlayer((prev) =>
       prev.map((t, i) => (i === activePlayer ? addThrow(t, pins) : t)),
@@ -106,9 +123,37 @@ export default function NewGame() {
     );
   };
 
-  const allComplete =
-    throwsByPlayer.length > 0 &&
-    throwsByPlayer.every((t) => nextThrow(t).isComplete);
+  // --- Captura pin por pin ---
+  const togglePin = (pin: number) => {
+    setPinSelected((prev) =>
+      prev.includes(pin) ? prev.filter((p) => p !== pin) : [...prev, pin],
+    );
+  };
+
+  const confirmPinThrow = (knocked: number[]) => {
+    setPinFramesByPlayer((prev) =>
+      prev.map((f, i) => (i === activePlayer ? pinAddThrow(f, knocked) : f)),
+    );
+    setPinSelected([]);
+  };
+
+  const undoPinThrow = () => {
+    setPinFramesByPlayer((prev) =>
+      prev.map((f, i) => (i === activePlayer ? pinUndoThrow(f) : f)),
+    );
+    setPinSelected([]);
+  };
+
+  const switchPlayer = (i: number) => {
+    setActivePlayer(i);
+    setPinSelected([]);
+  };
+
+  const allComplete = isPinMode
+    ? pinFramesByPlayer.length > 0 &&
+      pinFramesByPlayer.every((f) => pinState(f).isComplete)
+    : throwsByPlayer.length > 0 &&
+      throwsByPlayer.every((t) => nextThrow(t).isComplete);
 
   const save = async () => {
     if (!user) return;
@@ -123,7 +168,12 @@ export default function NewGame() {
           name: p.name.trim(),
           score: isFrameMode ? 0 : Number(p.score),
           isSelf: i === 0,
-          throws: isFrameMode ? throwsByPlayer[i] : undefined,
+          throws: isFrameMode
+            ? isPinMode
+              ? pinsToCounts(pinFramesByPlayer[i] ?? [])
+              : throwsByPlayer[i]
+            : undefined,
+          pinFrames: isPinMode ? pinFramesByPlayer[i] : undefined,
         })),
       });
       navigate("/history");
@@ -135,10 +185,18 @@ export default function NewGame() {
     }
   };
 
-  // ---------- Paso 2: captura frame por frame ----------
+  // ---------- Paso 2: captura (frame por frame o pin por pin) ----------
   if (step === "capture") {
-    const activeThrows = throwsByPlayer[activePlayer] ?? [];
+    const activePinFrames = pinFramesByPlayer[activePlayer] ?? [];
+    const pinInfo = pinState(activePinFrames);
+    const activeThrows = isPinMode
+      ? pinsToCounts(activePinFrames)
+      : (throwsByPlayer[activePlayer] ?? []);
     const info = nextThrow(activeThrows);
+    const playerComplete = (i: number) =>
+      isPinMode
+        ? pinState(pinFramesByPlayer[i] ?? []).isComplete
+        : nextThrow(throwsByPlayer[i] ?? []).isComplete;
 
     return (
       <div className="animate-fade-in-up space-y-5">
@@ -162,11 +220,11 @@ export default function NewGame() {
         {players.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {players.map((p, i) => {
-              const complete = nextThrow(throwsByPlayer[i] ?? []).isComplete;
+              const complete = playerComplete(i);
               return (
                 <button
                   key={i}
-                  onClick={() => setActivePlayer(i)}
+                  onClick={() => switchPlayer(i)}
                   className={cn(
                     "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium",
                     i === activePlayer
@@ -195,13 +253,26 @@ export default function NewGame() {
         {/* Hoja de score */}
         <Scoreboard throws={activeThrows} />
 
-        {/* Teclado de captura */}
-        <PinPad
-          info={info}
-          onPick={handlePick}
-          onUndo={handleUndo}
-          canUndo={activeThrows.length > 0}
-        />
+        {/* Captura: tablero de pinos (pin por pin) o teclado numérico */}
+        {isPinMode ? (
+          <PinDeck
+            standing={pinInfo.standing}
+            selected={pinSelected}
+            onToggle={togglePin}
+            onConfirm={() => confirmPinThrow(pinSelected)}
+            onAllRemaining={() => confirmPinThrow(pinInfo.standing)}
+            onUndo={undoPinThrow}
+            canUndo={activePinFrames.some((f) => f.length > 0)}
+            isComplete={pinInfo.isComplete}
+          />
+        ) : (
+          <PinPad
+            info={info}
+            onPick={handlePick}
+            onUndo={handleUndo}
+            canUndo={activeThrows.length > 0}
+          />
+        )}
 
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">

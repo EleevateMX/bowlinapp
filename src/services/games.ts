@@ -20,6 +20,8 @@ export interface NewGamePlayerInput {
   isSelf?: boolean;
   /** Tiros capturados frame por frame (opcional). Si viene, el score se deriva. */
   throws?: number[];
+  /** Captura pin por pin: frames → tiros → pinos derribados */
+  pinFrames?: number[][][];
 }
 
 export interface NewGameInput {
@@ -71,6 +73,7 @@ export async function createGame(
         finalScore:
           p.throws && p.throws.length > 0 ? totalScore(p.throws) : p.score,
         throws: p.throws,
+        pinFrames: p.pinFrames,
       })),
     });
   }
@@ -144,15 +147,17 @@ export async function createGame(
       .select("id, frame_number");
     if (frameError) throw frameError;
 
+    const frameIdByNumber = new Map(
+      (frameRows ?? []).map((f) => [f.frame_number, f.id]),
+    );
+
     const throwRows: {
       frame_id: string;
       throw_number: number;
       pins_knocked: number;
     }[] = [];
     for (const f of frames) {
-      const frameId = frameRows?.find(
-        (fr) => fr.frame_number === f.frameNumber,
-      )?.id;
+      const frameId = frameIdByNumber.get(f.frameNumber);
       if (!frameId) continue;
       f.throws.forEach((pins, i) => {
         throwRows.push({
@@ -162,11 +167,52 @@ export async function createGame(
         });
       });
     }
-    if (throwRows.length > 0) {
-      const { error: throwError } = await supabase
-        .from("throws")
-        .insert(throwRows);
-      if (throwError) throw throwError;
+    if (throwRows.length === 0) continue;
+
+    const { data: insertedThrows, error: throwError } = await supabase
+      .from("throws")
+      .insert(throwRows)
+      .select("id, frame_id, throw_number");
+    if (throwError) throw throwError;
+
+    // pin_results: estado de cada pino por tiro (solo captura pin por pin)
+    if (p.pinFrames && p.pinFrames.length > 0) {
+      const throwIdByKey = new Map(
+        (insertedThrows ?? []).map((t) => [
+          `${t.frame_id}:${t.throw_number}`,
+          t.id,
+        ]),
+      );
+      const pinRows: {
+        throw_id: string;
+        pin_number: number;
+        is_knocked: boolean;
+      }[] = [];
+
+      p.pinFrames.forEach((frame, fIdx) => {
+        const frameId = frameIdByNumber.get(fIdx + 1);
+        if (!frameId) return;
+        const down = new Set<number>();
+        frame.forEach((knocked, tIdx) => {
+          knocked.forEach((pin) => down.add(pin));
+          const throwId = throwIdByKey.get(`${frameId}:${tIdx + 1}`);
+          if (!throwId) return;
+          for (let pin = 1; pin <= 10; pin++) {
+            pinRows.push({
+              throw_id: throwId,
+              pin_number: pin,
+              is_knocked: down.has(pin),
+            });
+          }
+        });
+      });
+
+      if (pinRows.length > 0) {
+        const { error: pinError } = await supabase
+          .from("pin_results")
+          .insert(pinRows);
+        if (pinError) throw pinError;
+      }
     }
   }
 

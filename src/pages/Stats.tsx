@@ -8,7 +8,11 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { PlanGate } from "@/components/shared/PlanGate";
 import { StatCard } from "@/components/shared/StatCard";
 import { useAsync } from "@/hooks/useAsync";
-import { getAdvancedStats, getStatsSummary } from "@/services/stats";
+import {
+  getAdvancedStats,
+  getPinAnalysis,
+  getStatsSummary,
+} from "@/services/stats";
 import { useAppStore } from "@/store/useAppStore";
 
 /** Fila de estadística con barra (strike rate, spare rate, etc.) */
@@ -38,11 +42,12 @@ export default function Stats() {
   const selfPlayerId = useAppStore((s) => s.selfPlayerId);
 
   const { data, loading } = useAsync(async () => {
-    const [summary, advanced] = await Promise.all([
+    const [summary, advanced, pins] = await Promise.all([
       getStatsSummary(selfPlayerId),
       getAdvancedStats(selfPlayerId),
+      getPinAnalysis(selfPlayerId),
     ]);
-    return { summary, advanced };
+    return { summary, advanced, pins };
   }, [selfPlayerId]);
 
   return (
@@ -164,22 +169,45 @@ export default function Stats() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Target className="size-4 text-strike" />
-                  Pines más fallados
+                  Análisis pin por pin
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-around py-2">
-                  {[10, 7, 4].map((pin) => (
-                    <div key={pin} className="text-center">
-                      <div className="mx-auto flex size-12 items-center justify-center rounded-full border-2 border-strike/50 font-display text-lg font-bold">
-                        {pin}
-                      </div>
-                      <p className="mt-1.5 text-xs text-muted-foreground">
-                        Pin {pin}
-                      </p>
+                {data.pins.hasData ? (
+                  <>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Pines más fallados
+                    </p>
+                    <div className="flex justify-around py-2">
+                      {data.pins.missed.map(({ pin, count }) => (
+                        <div key={pin} className="text-center">
+                          <div className="mx-auto flex size-12 items-center justify-center rounded-full border-2 border-strike/50 font-display text-lg font-bold">
+                            {pin}
+                          </div>
+                          <p className="mt-1.5 text-xs text-muted-foreground">
+                            {count} {count === 1 ? "vez" : "veces"}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                    <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
+                      <span className="text-muted-foreground">
+                        Splits dejados
+                      </span>
+                      <span className="font-display font-bold">
+                        {data.pins.splits}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    Registra partidas en modo{" "}
+                    <span className="font-semibold text-strike">
+                      pin por pin
+                    </span>{" "}
+                    para ver qué pinos fallas más.
+                  </p>
+                )}
               </CardContent>
             </Card>
           </PlanGate>

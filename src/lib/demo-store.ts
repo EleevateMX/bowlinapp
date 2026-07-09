@@ -6,6 +6,7 @@
  * — todo sin backend. Al conectar Supabase, los servicios dejan de usar esto.
  */
 import { mockGames } from "./mock-data";
+import { countSplits, missedPins } from "./pin-input";
 import { scoreGame, scoreTrend, totalScore } from "./scoring";
 import type { GameType, ScoringMode, StatsSummary } from "@/types";
 
@@ -16,6 +17,8 @@ export interface DemoPlayer {
   isSelf: boolean;
   finalScore: number;
   throws?: number[];
+  /** Captura pin por pin: frames → tiros → pinos derribados */
+  pinFrames?: number[][][];
 }
 
 export interface DemoGame {
@@ -43,6 +46,43 @@ function seedFrameGame(): DemoGame {
   };
 }
 
+/** Una partida pin por pin de ejemplo (para análisis de pines y splits) */
+function seedPinGame(): DemoGame {
+  const pinFrames = [
+    [[1, 2, 3, 4, 5, 6, 8, 9], [7]], // deja 7,10 → falla 10
+    [[2, 3, 4, 5, 6, 7, 8, 9, 10], [1]], // spare
+    [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], // strike
+    [[1, 2, 4, 5, 7, 8, 9], [3, 6]], // deja 10 → falla 10
+    [[1, 2, 3, 5, 6, 8, 9, 10], [4]], // deja 7 → falla 7
+    [[1, 2, 3, 4, 5, 6, 8, 9], [7, 10]], // split 7-10 convertido
+    [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], // strike
+    [[2, 3, 5, 6, 8, 9], [1, 4]], // deja 7,10 → falla 7 y 10
+    [[1, 2, 3, 4, 5, 6, 7, 8, 9], [10]], // spare
+    [
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    ], // 10mo: tres chuzas
+  ];
+  const throws = pinFrames.flatMap((fr) => fr.map((t) => t.length));
+  return {
+    id: "seed-pin-1",
+    centerName: "AMF Interlomas",
+    playedAt: "2026-07-07T20:00:00Z",
+    gameType: "league",
+    scoringMode: "pin_by_pin",
+    players: [
+      {
+        name: "Yo",
+        isSelf: true,
+        finalScore: totalScore(throws),
+        throws,
+        pinFrames,
+      },
+    ],
+  };
+}
+
 /** Semilla: convierte las partidas de ejemplo en partidas del store */
 function seed(): DemoGame[] {
   const rest = mockGames.map((g) => {
@@ -65,7 +105,7 @@ function seed(): DemoGame[] {
       players,
     };
   });
-  return [seedFrameGame(), ...rest];
+  return [seedPinGame(), seedFrameGame(), ...rest];
 }
 
 function read(): DemoGame[] {
@@ -185,6 +225,38 @@ export function demoSpareConversion(): number | null {
     }
   }
   return nonStrike > 0 ? spares / nonStrike : null;
+}
+
+export interface PinAnalysis {
+  /** Top de pinos más fallados: [{ pin, count }] */
+  missed: { pin: number; count: number }[];
+  splits: number;
+  hasData: boolean;
+}
+
+/** Análisis pin por pin agregado de todas las partidas del jugador */
+export function demoPinAnalysis(): PinAnalysis {
+  const counts = new Map<number, number>();
+  let splits = 0;
+  let hasData = false;
+
+  for (const g of read()) {
+    const self = g.players.find((p) => p.isSelf);
+    if (self?.pinFrames && self.pinFrames.length > 0) {
+      hasData = true;
+      for (const pin of missedPins(self.pinFrames)) {
+        counts.set(pin, (counts.get(pin) ?? 0) + 1);
+      }
+      splits += countSplits(self.pinFrames);
+    }
+  }
+
+  const missed = [...counts.entries()]
+    .map(([pin, count]) => ({ pin, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  return { missed, splits, hasData };
 }
 
 export function demoScoreHistory(limit = 10): { date: string; score: number }[] {

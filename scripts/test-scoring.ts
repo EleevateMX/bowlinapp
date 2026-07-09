@@ -13,6 +13,14 @@ import {
   consistencyIndex,
 } from "../src/lib/scoring.ts";
 import { nextThrow, addThrow } from "../src/lib/frame-input.ts";
+import {
+  pinState,
+  pinAddThrow,
+  pinUndoThrow,
+  pinsToCounts,
+  missedPins,
+  countSplits,
+} from "../src/lib/pin-input.ts";
 
 let passed = 0;
 let failed = 0;
@@ -119,6 +127,29 @@ eq(
   true,
 );
 eq("consistencia con <2 datos = 0", consistencyIndex([150]), 0);
+
+console.log("\nCaptura pin por pin:");
+// Juego vacío: primer tiro, 10 pinos de pie
+eq("pin: vacío → frame 1 tiro 1, 10 de pie", pinState([]).standing.length, 10);
+// Tirar 8 pinos (quedan 7 y 10 de pie = split clásico)
+let pf: number[][][] = [];
+pf = pinAddThrow(pf, [1, 2, 3, 4, 5, 6, 8, 9]); // deja 7 y 10
+const st = pinState(pf);
+eq("pin: tras primer tiro quedan 7 y 10", st.standing, [7, 10]);
+eq("pin: es tiro 2 del frame 1", st.throwInFrame === 2 && st.frameNumber === 1, true);
+eq("pin: conteo del tiro = 8", pinsToCounts(pf), [8]);
+// No deja derribar un pino que ya cayó
+eq("pin: no permite pino ya derribado", pinAddThrow(pf, [5]), pf);
+// Deshacer
+eq("pin: deshacer deja el juego vacío", pinUndoThrow(pf), []);
+// Strike pin por pin
+eq("pin: strike (10 pinos) pasa al frame 2", pinState([[[1,2,3,4,5,6,7,8,9,10]]]).frameNumber, 2);
+// Split 7-10 se detecta
+eq("pin: 7-10 es split", countSplits([[[1,2,3,4,5,6,8,9]]]), 1);
+// Si el headpin queda de pie, no es split
+eq("pin: headpin de pie no es split", countSplits([[[2,3,4,5,6]]]), 0);
+// Pines fallados: quedaron 7 y 10 sin cerrar
+eq("pin: pines fallados incluyen 7 y 10", missedPins([[[1,2,3,4,5,6,8,9],[]]]).sort((a,b)=>a-b), [7,10]);
 
 console.log(`\n${passed} pasaron, ${failed} fallaron\n`);
 if (failed > 0) process.exit(1);
