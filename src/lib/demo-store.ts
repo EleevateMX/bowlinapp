@@ -145,6 +145,10 @@ export function demoStats(): StatsSummary {
   };
 }
 
+export function demoGetGame(id: string): DemoGame | null {
+  return read().find((g) => g.id === id) ?? null;
+}
+
 export function demoScoreHistory(limit = 10): { date: string; score: number }[] {
   return demoListGames(limit)
     .map((g) => ({ date: g.playedAt, score: selfScore(g) }))

@@ -73,30 +73,32 @@ export default function History() {
         <>
           <div className="space-y-2.5">
             {games.map((game) => (
-              <Card key={game.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold">
-                        {game.centerName ?? "Sin boliche"}
+              <Link key={game.id} to={`/game/${game.id}`} className="block">
+                <Card className="transition-colors hover:border-strike/40">
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold">
+                          {game.centerName ?? "Sin boliche"}
+                        </p>
+                        <Badge
+                          variant="secondary"
+                          className="shrink-0 text-[10px]"
+                        >
+                          {gameTypeLabels[game.gameType]}
+                        </Badge>
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {formatDate(game.playedAt)} · {game.players}{" "}
+                        {game.players === 1 ? "jugador" : "jugadores"}
                       </p>
-                      <Badge
-                        variant="secondary"
-                        className="shrink-0 text-[10px]"
-                      >
-                        {gameTypeLabels[game.gameType]}
-                      </Badge>
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatDate(game.playedAt)} · {game.players}{" "}
-                      {game.players === 1 ? "jugador" : "jugadores"}
-                    </p>
-                  </div>
-                  <span className="font-display text-2xl font-bold text-strike">
-                    {game.myScore}
-                  </span>
-                </CardContent>
-              </Card>
+                    <span className="font-display text-2xl font-bold text-strike">
+                      {game.myScore}
+                    </span>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
 

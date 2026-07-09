@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { Spinner } from "@/components/shared/Spinner";
 import { AppLayout } from "@/layouts/AppLayout";
 import Dashboard from "@/pages/Dashboard";
+import GameDetail from "@/pages/GameDetail";
 import History from "@/pages/History";
 import Login from "@/pages/Login";
 import NewGame from "@/pages/NewGame";
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
           { path: "/", element: <Dashboard /> },
           { path: "/new-game", element: <NewGame /> },
           { path: "/history", element: <History /> },
+          { path: "/game/:id", element: <GameDetail /> },
           { path: "/stats", element: <Stats /> },
           { path: "/upgrade", element: <Upgrade /> },
           { path: "/profile", element: <Profile /> },

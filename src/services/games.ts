@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { demoCreateGame, demoListGames } from "@/lib/demo-store";
+import { demoCreateGame, demoGetGame, demoListGames } from "@/lib/demo-store";
 import { scoreGame, totalScore } from "@/lib/scoring";
 import type { GameType, ScoringMode } from "@/types";
 import { getMyPlayer, getOrCreatePlayer } from "./players";
@@ -180,6 +180,112 @@ interface GameRow {
   scoring_mode: ScoringMode;
   bowling_centers: { name: string } | null;
   game_players: { final_score: number; player_id: string }[];
+}
+
+export interface GameDetailPlayer {
+  name: string;
+  isSelf: boolean;
+  finalScore: number;
+  turnOrder: number;
+  /** Tiros reconstruidos (solo en partidas frame por frame) */
+  throws?: number[];
+}
+
+export interface GameDetail {
+  id: string;
+  centerName: string | null;
+  playedAt: string;
+  gameType: GameType;
+  scoringMode: ScoringMode;
+  players: GameDetailPlayer[];
+}
+
+interface DetailRow {
+  id: string;
+  played_at: string;
+  game_type: GameType;
+  scoring_mode: ScoringMode;
+  bowling_centers: { name: string } | null;
+  game_players: {
+    final_score: number;
+    turn_order: number;
+    players: { name: string; is_owner: boolean } | null;
+    frames: {
+      frame_number: number;
+      throws: { throw_number: number; pins_knocked: number }[];
+    }[];
+  }[];
+}
+
+/** Reconstruye la lista plana de tiros a partir de los frames guardados */
+function reconstructThrows(
+  frames: DetailRow["game_players"][number]["frames"],
+): number[] {
+  const out: number[] = [];
+  [...frames]
+    .sort((a, b) => a.frame_number - b.frame_number)
+    .forEach((f) => {
+      [...f.throws]
+        .sort((a, b) => a.throw_number - b.throw_number)
+        .forEach((t) => out.push(t.pins_knocked));
+    });
+  return out;
+}
+
+/** Detalle completo de una partida (con scoresheet si es frame por frame) */
+export async function getGameDetail(
+  userId: string,
+  gameId: string,
+): Promise<GameDetail | null> {
+  if (!supabase) {
+    const g = demoGetGame(gameId);
+    if (!g) return null;
+    return {
+      id: g.id,
+      centerName: g.centerName,
+      playedAt: g.playedAt,
+      gameType: g.gameType,
+      scoringMode: g.scoringMode,
+      players: g.players.map((p, i) => ({
+        name: p.name,
+        isSelf: p.isSelf,
+        finalScore: p.finalScore,
+        turnOrder: i + 1,
+        throws: p.throws,
+      })),
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("games")
+    .select(
+      "id, played_at, game_type, scoring_mode, bowling_centers(name), game_players(final_score, turn_order, players(name, is_owner), frames(frame_number, throws(throw_number, pins_knocked)))",
+    )
+    .eq("id", gameId)
+    .eq("owner_id", userId)
+    .single();
+  if (error || !data) return null;
+
+  const raw = data as unknown as DetailRow;
+  return {
+    id: raw.id,
+    centerName: raw.bowling_centers?.name ?? null,
+    playedAt: raw.played_at,
+    gameType: raw.game_type,
+    scoringMode: raw.scoring_mode,
+    players: [...raw.game_players]
+      .sort((a, b) => a.turn_order - b.turn_order)
+      .map((gp) => {
+        const throws = reconstructThrows(gp.frames ?? []);
+        return {
+          name: gp.players?.name ?? "Jugador",
+          isSelf: gp.players?.is_owner ?? false,
+          finalScore: gp.final_score,
+          turnOrder: gp.turn_order,
+          throws: throws.length > 0 ? throws : undefined,
+        };
+      }),
+  };
 }
 
 /** Lista las partidas del usuario (más reciente primero) */
