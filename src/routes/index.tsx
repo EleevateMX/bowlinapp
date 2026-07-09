@@ -1,19 +1,22 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 
 import { Spinner } from "@/components/shared/Spinner";
 import { AppLayout } from "@/layouts/AppLayout";
-import Dashboard from "@/pages/Dashboard";
-import GameDetail from "@/pages/GameDetail";
-import History from "@/pages/History";
-import Login from "@/pages/Login";
-import NewGame from "@/pages/NewGame";
-import Profile from "@/pages/Profile";
-import Register from "@/pages/Register";
-import Stats from "@/pages/Stats";
-import Upgrade from "@/pages/Upgrade";
 import { useAppStore } from "@/store/useAppStore";
 
-/** Pantalla de carga mientras se resuelve la sesión */
+// Carga diferida: cada página es su propio chunk
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const GameDetail = lazy(() => import("@/pages/GameDetail"));
+const History = lazy(() => import("@/pages/History"));
+const Login = lazy(() => import("@/pages/Login"));
+const NewGame = lazy(() => import("@/pages/NewGame"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const Register = lazy(() => import("@/pages/Register"));
+const Stats = lazy(() => import("@/pages/Stats"));
+const Upgrade = lazy(() => import("@/pages/Upgrade"));
+
+/** Pantalla de carga mientras se resuelve la sesión o carga un chunk */
 function SplashScreen() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4">
@@ -21,6 +24,11 @@ function SplashScreen() {
       <Spinner />
     </div>
   );
+}
+
+/** Envuelve un elemento diferido con su fallback de carga */
+function Lazy({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<SplashScreen />}>{children}</Suspense>;
 }
 
 /** Protege las rutas privadas según el estado de la sesión */
@@ -44,7 +52,9 @@ export const router = createBrowserRouter([
     path: "/login",
     element: (
       <RedirectIfAuthed>
-        <Login />
+        <Lazy>
+          <Login />
+        </Lazy>
       </RedirectIfAuthed>
     ),
   },
@@ -52,7 +62,9 @@ export const router = createBrowserRouter([
     path: "/register",
     element: (
       <RedirectIfAuthed>
-        <Register />
+        <Lazy>
+          <Register />
+        </Lazy>
       </RedirectIfAuthed>
     ),
   },
@@ -62,13 +74,13 @@ export const router = createBrowserRouter([
       {
         element: <AppLayout />,
         children: [
-          { path: "/", element: <Dashboard /> },
-          { path: "/new-game", element: <NewGame /> },
-          { path: "/history", element: <History /> },
-          { path: "/game/:id", element: <GameDetail /> },
-          { path: "/stats", element: <Stats /> },
-          { path: "/upgrade", element: <Upgrade /> },
-          { path: "/profile", element: <Profile /> },
+          { path: "/", element: <Lazy><Dashboard /></Lazy> },
+          { path: "/new-game", element: <Lazy><NewGame /></Lazy> },
+          { path: "/history", element: <Lazy><History /></Lazy> },
+          { path: "/game/:id", element: <Lazy><GameDetail /></Lazy> },
+          { path: "/stats", element: <Lazy><Stats /></Lazy> },
+          { path: "/upgrade", element: <Lazy><Upgrade /></Lazy> },
+          { path: "/profile", element: <Lazy><Profile /></Lazy> },
         ],
       },
     ],
