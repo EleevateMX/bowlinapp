@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useAsync } from "@/hooks/useAsync";
 import { getStatsSummary } from "@/services/stats";
 import { PLANS } from "@/lib/plans";
@@ -86,6 +87,14 @@ export default function Profile() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Tema */}
+      <div className="space-y-2">
+        <p className="px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          Apariencia
+        </p>
+        <ThemeToggle />
       </div>
 
       {/* Menú */}

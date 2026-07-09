@@ -12,7 +12,8 @@ import type { PlanId } from "@/types";
 /** Bullets de venta por plan (copy de marketing, no la lista técnica) */
 const planBullets: Record<PlanId, string[]> = {
   free: [
-    "Registro de partidas con score final",
+    "Registro frame por frame de todos tus juegos",
+    "Score final o tiro por tiro",
     "Hasta 3 jugadores por partida",
     "Últimas 10 partidas",
     "Promedio y mejor score",
@@ -21,7 +22,6 @@ const planBullets: Record<PlanId, string[]> = {
   ],
   plus: [
     "Todo lo del plan Gratis",
-    "Registro frame por frame",
     "Historial ilimitado",
     "Estadísticas avanzadas y consistencia",
     "Filtros por boliche, fecha y jugador",

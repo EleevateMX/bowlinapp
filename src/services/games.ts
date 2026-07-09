@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { mockGames } from "@/lib/mock-data";
+import { scoreGame, totalScore } from "@/lib/scoring";
 import type { GameType, ScoringMode } from "@/types";
 import { getMyPlayer, getOrCreatePlayer } from "./players";
 
@@ -17,6 +18,8 @@ export interface NewGamePlayerInput {
   name: string;
   score: number;
   isSelf?: boolean;
+  /** Tiros capturados frame por frame (opcional). Si viene, el score se deriva. */
+  throws?: number[];
 }
 
 export interface NewGameInput {
@@ -86,18 +89,72 @@ export async function createGame(
   for (const p of input.players) {
     const playerId =
       p.isSelf && self ? self.id : (await getOrCreatePlayer(userId, p.name)).id;
+    // Con captura frame por frame el score se calcula, no se confía en el input
+    const finalScore =
+      p.throws && p.throws.length > 0 ? totalScore(p.throws) : p.score;
     rows.push({
       game_id: game.id,
       player_id: playerId,
-      final_score: p.score,
+      final_score: finalScore,
       turn_order: order++,
     });
   }
 
-  const { error: playersError } = await supabase
+  const { data: insertedPlayers, error: playersError } = await supabase
     .from("game_players")
-    .insert(rows);
+    .insert(rows)
+    .select("id, turn_order");
   if (playersError) throw playersError;
+
+  // Persiste frames + tiros para los jugadores capturados frame por frame
+  const framePlayers = input.players
+    .map((p, idx) => ({ p, turnOrder: idx + 1 }))
+    .filter((x) => x.p.throws && x.p.throws.length > 0);
+
+  for (const { p, turnOrder } of framePlayers) {
+    const gpId = insertedPlayers?.find((r) => r.turn_order === turnOrder)?.id;
+    if (!gpId) continue;
+
+    const frames = scoreGame(p.throws!);
+    const { data: frameRows, error: frameError } = await supabase
+      .from("frames")
+      .insert(
+        frames.map((f) => ({
+          game_player_id: gpId,
+          frame_number: f.frameNumber,
+          is_strike: f.isStrike,
+          is_spare: f.isSpare,
+          cumulative_score: f.cumulativeScore,
+        })),
+      )
+      .select("id, frame_number");
+    if (frameError) throw frameError;
+
+    const throwRows: {
+      frame_id: string;
+      throw_number: number;
+      pins_knocked: number;
+    }[] = [];
+    for (const f of frames) {
+      const frameId = frameRows?.find(
+        (fr) => fr.frame_number === f.frameNumber,
+      )?.id;
+      if (!frameId) continue;
+      f.throws.forEach((pins, i) => {
+        throwRows.push({
+          frame_id: frameId,
+          throw_number: i + 1,
+          pins_knocked: pins,
+        });
+      });
+    }
+    if (throwRows.length > 0) {
+      const { error: throwError } = await supabase
+        .from("throws")
+        .insert(throwRows);
+      if (throwError) throw throwError;
+    }
+  }
 
   return game.id;
 }

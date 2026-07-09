@@ -10,6 +10,7 @@ import {
   isValidRegularFrame,
   isValidTenthFrame,
 } from "../src/lib/scoring.ts";
+import { nextThrow, addThrow } from "../src/lib/frame-input.ts";
 
 let passed = 0;
 let failed = 0;
@@ -72,6 +73,39 @@ eq("mejor de [150,234,180] = 234", bestScore([150, 234, 180]), 234);
 eq("tendencia subiendo", scoreTrend([120, 130, 125, 160, 170, 175]), "up");
 eq("tendencia bajando", scoreTrend([180, 175, 170, 130, 125, 120]), "down");
 eq("tendencia plana con pocos datos", scoreTrend([150, 160]), "flat");
+
+console.log("\nCaptura frame por frame:");
+eq("juego vacío → frame 1, tiro 1, max 10", nextThrow([]), {
+  frameNumber: 1,
+  throwInFrame: 1,
+  maxPins: 10,
+  isComplete: false,
+});
+eq("tras tirar 7 → tiro 2, max 3", nextThrow([7]), {
+  frameNumber: 1,
+  throwInFrame: 2,
+  maxPins: 3,
+  isComplete: false,
+});
+eq("tras strike → frame 2, tiro 1", nextThrow([10]), {
+  frameNumber: 2,
+  throwInFrame: 1,
+  maxPins: 10,
+  isComplete: false,
+});
+eq("no deja tirar más de lo posible (7 luego 5 → ignora)", addThrow([7], 5), [7]);
+eq("sí deja completar spare (7 luego 3)", addThrow([7], 3), [7, 3]);
+// Juego perfecto: 12 strikes → completo
+const perfect = Array(12).fill(10);
+eq("juego perfecto está completo", nextThrow(perfect).isComplete, true);
+// 10mo frame con spare da tercer tiro
+eq(
+  "spare en el 10mo habilita 3er tiro",
+  nextThrow([...Array(18).fill(0), 7, 3]),
+  { frameNumber: 10, throwInFrame: 3, maxPins: 10, isComplete: false },
+);
+// Juego abierto (todos 9-0) queda completo tras 20 tiros
+eq("20 tiros abiertos → completo", nextThrow(Array(10).fill(0).flatMap(() => [9, 0])).isComplete, true);
 
 console.log(`\n${passed} pasaron, ${failed} fallaron\n`);
 if (failed > 0) process.exit(1);

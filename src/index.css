@@ -3,8 +3,46 @@
 @tailwind utilities;
 
 @layer base {
+  /* ---------- Tema claro (por defecto en :root) ---------- */
   :root {
-    /* StrikeLab — tema oscuro premium (único tema por ahora) */
+    --background: 220 30% 97%;
+    --foreground: 224 40% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 40% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 40% 12%;
+
+    /* Ámbar "strike" — se mantiene en ambos temas */
+    --primary: 38 92% 50%;
+    --primary-foreground: 224 40% 8%;
+
+    --secondary: 220 16% 93%;
+    --secondary-foreground: 224 40% 12%;
+
+    --muted: 220 16% 93%;
+    --muted-foreground: 220 10% 42%;
+
+    --accent: 220 16% 90%;
+    --accent-foreground: 224 40% 12%;
+
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 16% 86%;
+    --input: 220 16% 86%;
+    --ring: 38 92% 50%;
+
+    --radius: 0.75rem;
+
+    /* Superficies "lane" adaptables (usadas en nav y tarjetas destacadas) */
+    --lane-elevated: 0 0% 100%;
+    --lane-base: 220 30% 97%;
+  }
+
+  /* ---------- Tema oscuro premium ---------- */
+  .dark {
     --background: 224 40% 5%;
     --foreground: 220 20% 96%;
 
@@ -14,7 +52,6 @@
     --popover: 224 35% 8%;
     --popover-foreground: 220 20% 96%;
 
-    /* Ámbar "strike" — energía de boliche */
     --primary: 38 95% 55%;
     --primary-foreground: 224 40% 6%;
 
@@ -34,7 +71,8 @@
     --input: 224 25% 16%;
     --ring: 38 95% 55%;
 
-    --radius: 0.75rem;
+    --lane-elevated: 224 35% 9%;
+    --lane-base: 224 40% 6%;
   }
 
   * {
@@ -47,17 +85,16 @@
 
   body {
     @apply bg-background font-sans text-foreground antialiased;
-    /* Respeta notch / safe areas en iOS */
     padding-top: env(safe-area-inset-top);
   }
 
-  /* Scrollbar sutil para el look premium */
   ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-lane-600;
+    @apply rounded-full;
+    background: hsl(var(--muted-foreground) / 0.3);
   }
   ::-webkit-scrollbar-track {
     background: transparent;
@@ -75,5 +112,13 @@
 
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Superficies adaptables al tema */
+  .bg-lane-elevated {
+    background-color: hsl(var(--lane-elevated));
+  }
+  .bg-lane-base {
+    background-color: hsl(var(--lane-base));
   }
 }

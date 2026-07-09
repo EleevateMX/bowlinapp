@@ -161,7 +161,7 @@ export default function Dashboard() {
 
           {/* Racha / motivación */}
           {data.stats.trend === "up" && (
-            <Card className="border-strike/20 bg-gradient-to-br from-lane-800 to-lane-900">
+            <Card className="border-strike/20 bg-strike/5">
               <CardContent className="flex items-center gap-3 p-4">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-strike/15">
                   <Flame className="size-5 text-strike" />

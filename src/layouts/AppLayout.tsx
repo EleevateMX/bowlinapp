@@ -24,7 +24,7 @@ export function AppLayout() {
         <Outlet />
       </main>
 
-      <nav className="pb-safe fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-lane-900/90 backdrop-blur-lg">
+      <nav className="pb-safe fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/85 backdrop-blur-lg">
         <div className="mx-auto flex h-16 max-w-md items-center justify-around px-2">
           {navItems.map(({ to, label, icon: Icon, isFab }) =>
             isFab ? (

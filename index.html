@@ -8,6 +8,17 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
     />
     <meta name="theme-color" content="#0a0e1a" />
+    <script>
+      // Aplica el tema guardado antes de pintar para evitar parpadeo
+      (function () {
+        try {
+          var t = localStorage.getItem("strikelab-theme");
+          var isDark = t !== "light"; // oscuro por defecto
+          document.documentElement.classList.toggle("dark", isDark);
+          document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+        } catch (e) {}
+      })();
+    </script>
     <meta
       name="description"
       content="StrikeLab — Registra tus partidas de boliche, analiza tu rendimiento y mejora tu juego."

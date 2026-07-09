@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Lock, Minus, Plus, UserPlus } from "lucide-react";
+import { ArrowLeft, Check, Lock, Minus, Plus, UserPlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Spinner } from "@/components/shared/Spinner";
-import { isValidFinalScore } from "@/lib/scoring";
+import { PinPad } from "@/components/games/PinPad";
+import { Scoreboard } from "@/components/games/Scoreboard";
+import { isValidFinalScore, totalScore } from "@/lib/scoring";
+import { addThrow, nextThrow, removeLastThrow } from "@/lib/frame-input";
 import { createGame } from "@/services/games";
 import { hasFeature, PLANS } from "@/lib/plans";
 import { useAppStore, useCurrentPlan } from "@/store/useAppStore";
@@ -21,11 +24,7 @@ interface PlayerEntry {
   score: string;
 }
 
-const scoringModes: {
-  id: ScoringMode;
-  label: string;
-  description: string;
-}[] = [
+const scoringModes: { id: ScoringMode; label: string; description: string }[] = [
   {
     id: "final_only",
     label: "Score final",
@@ -34,7 +33,7 @@ const scoringModes: {
   {
     id: "frame_by_frame",
     label: "Frame por frame",
-    description: "Registra cada frame para estadísticas avanzadas",
+    description: "Tira por tiro; el score se calcula solo",
   },
   {
     id: "pin_by_pin",
@@ -56,8 +55,9 @@ export default function NewGame() {
   const plan = useCurrentPlan();
   const maxPlayers = PLANS[plan].maxPlayersPerGame;
 
+  const [step, setStep] = useState<"setup" | "capture">("setup");
   const [center, setCenter] = useState("");
-  const [mode, setMode] = useState<ScoringMode>("final_only");
+  const [mode, setMode] = useState<ScoringMode>("frame_by_frame");
   const [gameType, setGameType] = useState<GameType>("casual");
   const [players, setPlayers] = useState<PlayerEntry[]>([
     { name: "Yo", score: "" },
@@ -65,6 +65,11 @@ export default function NewGame() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Captura frame por frame: tiros por jugador y jugador activo
+  const [throwsByPlayer, setThrowsByPlayer] = useState<number[][]>([]);
+  const [activePlayer, setActivePlayer] = useState(0);
+
+  const isFrameMode = mode !== "final_only";
   const canAddPlayer = players.length < maxPlayers;
 
   const modeAvailable = (m: ScoringMode) =>
@@ -72,11 +77,9 @@ export default function NewGame() {
     (m === "frame_by_frame" && hasFeature(plan, "frame_by_frame")) ||
     (m === "pin_by_pin" && hasFeature(plan, "pin_by_pin"));
 
-  const allScoresValid = players.every(
-    (p) =>
-      p.name.trim() !== "" &&
-      p.score.trim() !== "" &&
-      isValidFinalScore(Number(p.score)),
+  const namesValid = players.every((p) => p.name.trim() !== "");
+  const finalScoresValid = players.every(
+    (p) => p.score.trim() !== "" && isValidFinalScore(Number(p.score)),
   );
 
   const updatePlayer = (index: number, patch: Partial<PlayerEntry>) => {
@@ -85,7 +88,29 @@ export default function NewGame() {
     );
   };
 
-  const handleSave = async () => {
+  const startCapture = () => {
+    setThrowsByPlayer(players.map(() => []));
+    setActivePlayer(0);
+    setStep("capture");
+  };
+
+  const handlePick = (pins: number) => {
+    setThrowsByPlayer((prev) =>
+      prev.map((t, i) => (i === activePlayer ? addThrow(t, pins) : t)),
+    );
+  };
+
+  const handleUndo = () => {
+    setThrowsByPlayer((prev) =>
+      prev.map((t, i) => (i === activePlayer ? removeLastThrow(t) : t)),
+    );
+  };
+
+  const allComplete =
+    throwsByPlayer.length > 0 &&
+    throwsByPlayer.every((t) => nextThrow(t).isComplete);
+
+  const save = async () => {
     if (!user) return;
     setError(null);
     setSaving(true);
@@ -96,8 +121,9 @@ export default function NewGame() {
         scoringMode: mode,
         players: players.map((p, i) => ({
           name: p.name.trim(),
-          score: Number(p.score),
+          score: isFrameMode ? 0 : Number(p.score),
           isSelf: i === 0,
+          throws: isFrameMode ? throwsByPlayer[i] : undefined,
         })),
       });
       navigate("/history");
@@ -109,6 +135,101 @@ export default function NewGame() {
     }
   };
 
+  // ---------- Paso 2: captura frame por frame ----------
+  if (step === "capture") {
+    const activeThrows = throwsByPlayer[activePlayer] ?? [];
+    const info = nextThrow(activeThrows);
+
+    return (
+      <div className="animate-fade-in-up space-y-5">
+        <header className="flex items-center gap-3">
+          <button
+            onClick={() => setStep("setup")}
+            aria-label="Volver"
+            className="flex size-9 items-center justify-center rounded-full bg-secondary"
+          >
+            <ArrowLeft className="size-4" />
+          </button>
+          <div>
+            <h1 className="font-display text-xl font-bold">Captura tu juego</h1>
+            <p className="text-xs text-muted-foreground">
+              {center.trim() || "Sin boliche"}
+            </p>
+          </div>
+        </header>
+
+        {/* Selector de jugador */}
+        {players.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {players.map((p, i) => {
+              const complete = nextThrow(throwsByPlayer[i] ?? []).isComplete;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActivePlayer(i)}
+                  className={cn(
+                    "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium",
+                    i === activePlayer
+                      ? "border-strike bg-strike/10 text-strike"
+                      : "border-border text-muted-foreground",
+                  )}
+                >
+                  {complete && <Check className="size-3.5" />}
+                  {p.name.trim() || `Jugador ${i + 1}`}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Total en vivo */}
+        <div className="text-center">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            {players[activePlayer]?.name.trim() || "Jugador"} · Total
+          </p>
+          <p className="font-display text-5xl font-bold text-gradient-strike">
+            {totalScore(activeThrows)}
+          </p>
+        </div>
+
+        {/* Hoja de score */}
+        <Scoreboard throws={activeThrows} />
+
+        {/* Teclado de captura */}
+        <PinPad
+          info={info}
+          onPick={handlePick}
+          onUndo={handleUndo}
+          canUndo={activeThrows.length > 0}
+        />
+
+        {error && (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
+
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={!allComplete || saving}
+          onClick={save}
+        >
+          {saving ? (
+            <Spinner className="text-primary-foreground" />
+          ) : allComplete ? (
+            <>
+              <Check /> Guardar partida
+            </>
+          ) : (
+            `Completa los 10 frames de cada jugador`
+          )}
+        </Button>
+      </div>
+    );
+  }
+
+  // ---------- Paso 1: configuración ----------
   return (
     <div className="animate-fade-in-up space-y-6">
       <PageHeader title="Nueva partida" subtitle="Registra tu juego de hoy" />
@@ -169,12 +290,16 @@ export default function NewGame() {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">{m.label}</span>
-                  {!available && (
-                    <Badge variant="strike">
-                      <Lock className="size-3" />
-                      {m.id === "pin_by_pin" ? "Pro" : "Plus"}
-                    </Badge>
-                  )}
+                  {available
+                    ? m.id === "frame_by_frame" && (
+                        <Badge variant="spare">Gratis</Badge>
+                      )
+                    : (
+                        <Badge variant="strike">
+                          <Lock className="size-3" />
+                          {m.id === "pin_by_pin" ? "Pro" : "Plus"}
+                        </Badge>
+                      )}
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {m.description}
@@ -203,13 +328,15 @@ export default function NewGame() {
                   onChange={(e) => updatePlayer(i, { name: e.target.value })}
                   className="flex-1"
                 />
-                <Input
-                  placeholder="Score"
-                  inputMode="numeric"
-                  value={player.score}
-                  onChange={(e) => updatePlayer(i, { score: e.target.value })}
-                  className="w-24 text-center font-display font-bold"
-                />
+                {!isFrameMode && (
+                  <Input
+                    placeholder="Score"
+                    inputMode="numeric"
+                    value={player.score}
+                    onChange={(e) => updatePlayer(i, { score: e.target.value })}
+                    className="w-24 text-center font-display font-bold"
+                  />
+                )}
                 {players.length > 1 && (
                   <Button
                     variant="ghost"
@@ -255,24 +382,37 @@ export default function NewGame() {
         </p>
       )}
 
-      {/* Guardar */}
-      <Button
-        size="lg"
-        className="w-full"
-        disabled={!allScoresValid || saving}
-        onClick={handleSave}
-      >
-        {saving ? (
-          <Spinner className="text-primary-foreground" />
-        ) : (
-          <>
-            <Plus /> Guardar partida
-          </>
-        )}
-      </Button>
-      <p className="text-center text-xs text-muted-foreground">
-        Los scores deben estar entre 0 y 300.
-      </p>
+      {/* Acción principal según el modo */}
+      {isFrameMode ? (
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={!namesValid}
+          onClick={startCapture}
+        >
+          Continuar a capturar
+        </Button>
+      ) : (
+        <>
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={!namesValid || !finalScoresValid || saving}
+            onClick={save}
+          >
+            {saving ? (
+              <Spinner className="text-primary-foreground" />
+            ) : (
+              <>
+                <Plus /> Guardar partida
+              </>
+            )}
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Los scores deben estar entre 0 y 300.
+          </p>
+        </>
+      )}
     </div>
   );
 }

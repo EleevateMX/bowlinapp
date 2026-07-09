@@ -37,11 +37,14 @@ export interface PlanDefinition {
   highlight?: boolean;
 }
 
-const FREE_FEATURES: Feature[] = ["final_score_entry", "basic_history"];
+const FREE_FEATURES: Feature[] = [
+  "final_score_entry",
+  "frame_by_frame",
+  "basic_history",
+];
 
 const PLUS_FEATURES: Feature[] = [
   ...FREE_FEATURES,
-  "frame_by_frame",
   "advanced_stats",
   "unlimited_history",
   "filters",
@@ -71,7 +74,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   free: {
     id: "free",
     name: "Gratis",
-    tagline: "Registra y comparte tus partidas",
+    tagline: "Registra frame por frame todos tus juegos",
     priceMXN: 0,
     maxPlayersPerGame: 3,
     historyLimit: 10,
@@ -80,7 +83,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   plus: {
     id: "plus",
     name: "Plus",
-    tagline: "Frame por frame y estadísticas avanzadas",
+    tagline: "Estadísticas avanzadas y consistencia",
     priceMXN: 150,
     maxPlayersPerGame: 8,
     historyLimit: null,
