@@ -24,6 +24,17 @@ interface AppState {
 }
 
 const MOCK_PLAYER_ID = "mock-player-1";
+const DEMO_PLAN_KEY = "strikelab-demo-plan";
+
+/** Plan elegido en modo demo (persistido para poder explorar los candados) */
+function readDemoPlan(): PlanId {
+  try {
+    const v = localStorage.getItem(DEMO_PLAN_KEY);
+    return v === "plus" || v === "pro" ? v : "free";
+  } catch {
+    return "free";
+  }
+}
 
 export const useAppStore = create<AppState>((set, get) => ({
   user: null,
@@ -34,7 +45,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Sin credenciales: modo demo con mock data
     if (!supabase) {
       set({
-        user: mockUser,
+        user: { ...mockUser, plan: readDemoPlan() },
         selfPlayerId: MOCK_PLAYER_ID,
         status: "authenticated",
       });
@@ -76,8 +87,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   setUser: (user) =>
     set({ user, status: user ? "authenticated" : "unauthenticated" }),
 
-  setPlan: (plan) =>
-    set((state) => (state.user ? { user: { ...state.user, plan } } : state)),
+  setPlan: (plan) => {
+    // En demo persiste la elección para que sobreviva a recargas
+    if (!supabase) {
+      try {
+        localStorage.setItem(DEMO_PLAN_KEY, plan);
+      } catch {
+        /* almacenamiento no disponible */
+      }
+    }
+    set((state) => (state.user ? { user: { ...state.user, plan } } : state));
+  },
 
   signOut: async () => {
     if (supabase) await supabase.auth.signOut();

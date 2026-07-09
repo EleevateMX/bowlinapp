@@ -9,6 +9,8 @@ import {
   isValidFinalScore,
   isValidRegularFrame,
   isValidTenthFrame,
+  standardDeviation,
+  consistencyIndex,
 } from "../src/lib/scoring.ts";
 import { nextThrow, addThrow } from "../src/lib/frame-input.ts";
 
@@ -106,6 +108,17 @@ eq(
 );
 // Juego abierto (todos 9-0) queda completo tras 20 tiros
 eq("20 tiros abiertos → completo", nextThrow(Array(10).fill(0).flatMap(() => [9, 0])).isComplete, true);
+
+console.log("\nEstadísticas avanzadas:");
+eq("desviación de scores idénticos = 0", standardDeviation([150, 150, 150]), 0);
+eq("desviación de [100,200] = 50", standardDeviation([100, 200]), 50);
+eq("consistencia perfecta (idénticos) = 1", consistencyIndex([170, 170, 170]), 1);
+eq(
+  "consistencia baja con scores muy dispersos < 0.5",
+  consistencyIndex([80, 250, 90, 240]) < 0.5,
+  true,
+);
+eq("consistencia con <2 datos = 0", consistencyIndex([150]), 0);
 
 console.log(`\n${passed} pasaron, ${failed} fallaron\n`);
 if (failed > 0) process.exit(1);

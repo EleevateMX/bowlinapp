@@ -163,6 +163,27 @@ export function bestScore(scores: number[]): number {
   return scores.length > 0 ? Math.max(...scores) : 0;
 }
 
+/** Desviación estándar poblacional de una lista de scores */
+export function standardDeviation(scores: number[]): number {
+  if (scores.length < 2) return 0;
+  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const variance =
+    scores.reduce((a, b) => a + (b - mean) ** 2, 0) / scores.length;
+  return Math.sqrt(variance);
+}
+
+/**
+ * Índice de consistencia 0-1 (mayor = más parejo). Se basa en el
+ * coeficiente de variación: partidas con scores muy dispersos bajan el índice.
+ */
+export function consistencyIndex(scores: number[]): number {
+  if (scores.length < 2) return 0;
+  const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+  if (mean === 0) return 0;
+  const cv = standardDeviation(scores) / mean; // coef. de variación
+  return Math.max(0, Math.min(1, 1 - cv * 2.5));
+}
+
 /**
  * Tendencia simple: compara el promedio de la mitad reciente contra
  * la mitad anterior (las listas llegan en orden cronológico).

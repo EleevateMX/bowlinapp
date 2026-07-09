@@ -1,6 +1,10 @@
 import { supabase } from "@/lib/supabase";
-import { demoScoreHistory, demoStats } from "@/lib/demo-store";
-import { scoreTrend } from "@/lib/scoring";
+import {
+  demoScoreHistory,
+  demoSpareConversion,
+  demoStats,
+} from "@/lib/demo-store";
+import { consistencyIndex, scoreTrend, standardDeviation } from "@/lib/scoring";
 import type { StatsSummary } from "@/types";
 
 export interface ScorePoint {
@@ -44,6 +48,43 @@ export async function getStatsSummary(
 }
 
 /** Historial de scores para la gráfica (orden cronológico ascendente) */
+export interface AdvancedStats {
+  /** 0-1, mayor = más parejo */
+  consistency: number;
+  stdDev: number;
+  low: number;
+  high: number;
+  /** % de spares convertidos (null si no hay datos frame por frame) */
+  spareConversion: number | null;
+}
+
+/** Estadísticas avanzadas: consistencia, rango y conversión de spares */
+export async function getAdvancedStats(
+  playerId: string | null,
+): Promise<AdvancedStats> {
+  // El historial (hasta 100) sirve para consistencia y rango en ambos modos
+  const history = await getScoreHistory(playerId, 100);
+  const scores = history.map((h) => h.score);
+
+  let spareConversion: number | null;
+  if (!supabase || !playerId) {
+    spareConversion = demoSpareConversion();
+  } else {
+    const { data } = await supabase.rpc("player_spare_conversion", {
+      p_player_id: playerId,
+    });
+    spareConversion = data != null ? Number(data) : null;
+  }
+
+  return {
+    consistency: consistencyIndex(scores),
+    stdDev: Math.round(standardDeviation(scores) * 10) / 10,
+    low: scores.length > 0 ? Math.min(...scores) : 0,
+    high: scores.length > 0 ? Math.max(...scores) : 0,
+    spareConversion,
+  };
+}
+
 export async function getScoreHistory(
   playerId: string | null,
   limit = 10,

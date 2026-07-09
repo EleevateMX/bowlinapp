@@ -6,7 +6,7 @@
  * — todo sin backend. Al conectar Supabase, los servicios dejan de usar esto.
  */
 import { mockGames } from "./mock-data";
-import { scoreGame, scoreTrend } from "./scoring";
+import { scoreGame, scoreTrend, totalScore } from "./scoring";
 import type { GameType, ScoringMode, StatsSummary } from "@/types";
 
 const KEY = "strikelab-demo-games";
@@ -27,9 +27,25 @@ export interface DemoGame {
   players: DemoPlayer[];
 }
 
+/** Una partida frame por frame de ejemplo (para mostrar stats por tiro) */
+function seedFrameGame(): DemoGame {
+  // X, 7/, 9/, X, 8-1, X, 7-2, 9/, 8-0, 8/9
+  const throws = [10, 7, 3, 9, 1, 10, 8, 1, 10, 7, 2, 9, 1, 8, 0, 8, 2, 9];
+  return {
+    id: "seed-frame-1",
+    centerName: "Bol Campestre",
+    playedAt: "2026-07-08T21:00:00Z",
+    gameType: "casual",
+    scoringMode: "frame_by_frame",
+    players: [
+      { name: "Yo", isSelf: true, finalScore: totalScore(throws), throws },
+    ],
+  };
+}
+
 /** Semilla: convierte las partidas de ejemplo en partidas del store */
 function seed(): DemoGame[] {
-  return mockGames.map((g) => {
+  const rest = mockGames.map((g) => {
     const players: DemoPlayer[] = [
       { name: "Yo", isSelf: true, finalScore: g.myScore },
     ];
@@ -49,6 +65,7 @@ function seed(): DemoGame[] {
       players,
     };
   });
+  return [seedFrameGame(), ...rest];
 }
 
 function read(): DemoGame[] {
@@ -147,6 +164,27 @@ export function demoStats(): StatsSummary {
 
 export function demoGetGame(id: string): DemoGame | null {
   return read().find((g) => g.id === id) ?? null;
+}
+
+/**
+ * Conversión de spares: de los frames del jugador donde el primer tiro no
+ * fue strike, ¿qué % se convirtió en spare? (null si no hay datos frame).
+ */
+export function demoSpareConversion(): number | null {
+  let nonStrike = 0;
+  let spares = 0;
+  for (const g of read()) {
+    const self = g.players.find((p) => p.isSelf);
+    if (self?.throws && self.throws.length > 0) {
+      for (const f of scoreGame(self.throws)) {
+        if (!f.isStrike) {
+          nonStrike++;
+          if (f.isSpare) spares++;
+        }
+      }
+    }
+  }
+  return nonStrike > 0 ? spares / nonStrike : null;
 }
 
 export function demoScoreHistory(limit = 10): { date: string; score: number }[] {
